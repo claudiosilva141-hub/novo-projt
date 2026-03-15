@@ -1,0 +1,8 @@
+{
+  "name": "Gerenciador de Confecção e Vendas",
+  "description": "Um aplicativo completo para gerenciar confecção e venda de roupas, com PDV, orçamentos, ordens de serviço, relatórios e emissão de notas fiscais via WhatsApp.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
