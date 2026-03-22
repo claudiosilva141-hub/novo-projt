@@ -1,4 +1,4 @@
--- Script para criar todas as tabelas necessárias no Supabase
+-- Script para criar todas as tabelas necessárias no Supabase e inicializar dados básicos
 -- Cole este código no "SQL Editor" do painel do seu projeto Supabase e clique em "Run".
 
 -- 1. company_info
@@ -103,8 +103,27 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL
 );
 
--- Permissões Padrão de Segurança (RLS - Permite acesso de leitura/escrita público para propósitos de teste)
--- ATENÇÃO: Em produção, você deve criar políticas de segurança reais!
+-- --- DADOS DE INICIALIZAÇÃO ---
+
+-- Inserir informações da empresa (necessário para o carregamento inicial)
+INSERT INTO company_info (key, name, logo)
+VALUES ('singleton', 'Minha Empresa', NULL)
+ON CONFLICT (key) DO NOTHING;
+
+-- Inserir permissões padrão (necessário para o carregamento inicial)
+INSERT INTO user_permissions (key, can_add_product, can_edit_product, can_delete_product, can_finalize_sale, can_manage_users, can_use_ai)
+VALUES ('singleton', true, true, true, true, true, true)
+ON CONFLICT (key) DO NOTHING;
+
+-- Inserir usuário administrador inicial
+-- Usuário: admin / Senha: admin123
+INSERT INTO users (username, password, role)
+VALUES ('admin', 'admin123', 'admin')
+ON CONFLICT (username) DO NOTHING;
+
+-- --- CONFIGURAÇÃO DE SEGURANÇA (RLS) ---
+-- ATENÇÃO: Habilita acesso público para testes. Em produção, configure políticas restritivas.
+
 ALTER TABLE company_info ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
