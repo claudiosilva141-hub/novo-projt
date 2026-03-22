@@ -82,8 +82,9 @@ export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
   canPrintOrSendOrder: true,        // Permitido por padrão
 };
 
-// List of all permission keys for easier iteration in UI
-export const PERMISSION_KEYS: Array<keyof UserPermissions> = Object.keys(DEFAULT_USER_PERMISSIONS) as Array<keyof UserPermissions>;
+// List of all permission keys for easier iteration in UI - exclude 'key'
+export const PERMISSION_KEYS: Array<keyof Omit<UserPermissions, 'key'>> = 
+  Object.keys(DEFAULT_USER_PERMISSIONS).filter(k => k !== 'key') as Array<keyof Omit<UserPermissions, 'key'>>;
 
 // New: User-friendly labels for permissions in Portuguese
 // Use Omit to exclude 'key' from UserPermissions, as it's not a permission that needs a label

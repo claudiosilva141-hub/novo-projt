@@ -3,7 +3,7 @@ import { useAuth } from '../App';
 import { Button } from '../components/Button';
 import { Input, Select } from '../components/Input';
 import { fileToBase64 } from '../utils/base64Converter';
-import { UploadCloud, Save, Plus, Edit, Trash2, User as UserIcon, Lock, KeyRound } from 'lucide-react';
+import { UploadCloud, Save, Plus, Edit, Trash2, User as UserIcon, Lock, KeyRound, Sparkles } from 'lucide-react';
 import { COMPANY_NAME_DEFAULT, USER_ROLE_OPTIONS, PERMISSION_KEYS, PERMISSION_LABELS } from '../constants'; // Import PERMISSION_LABELS
 import { Modal } from '../components/Modal';
 import { User, UserRole, UserPermissions } from '../types'; // Import UserPermissions
@@ -137,6 +137,9 @@ export const SettingsPage: React.FC = () => {
   const [companyName, setCompanyName] = useState<string>(companyInfo.name);
   const [companyLogoFile, setCompanyLogoFile] = useState<File | null>(null);
   const [companyLogoPreview, setCompanyLogoPreview] = useState<string | null>(companyInfo.logo);
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(companyInfo.geminiApiKey || '');
+  const [geminiModelText, setGeminiModelText] = useState<string>(companyInfo.geminiModelText || '');
+  const [geminiModelImage, setGeminiModelImage] = useState<string>(companyInfo.geminiModelImage || '');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
@@ -151,6 +154,9 @@ export const SettingsPage: React.FC = () => {
   useEffect(() => {
     setCompanyName(companyInfo.name);
     setCompanyLogoPreview(companyInfo.logo);
+    setGeminiApiKey(companyInfo.geminiApiKey || '');
+    setGeminiModelText(companyInfo.geminiModelText || '');
+    setGeminiModelImage(companyInfo.geminiModelImage || '');
   }, [companyInfo]);
 
   useEffect(() => {
@@ -205,7 +211,7 @@ export const SettingsPage: React.FC = () => {
       return;
     }
 
-    updateCompanyInfo(companyName.trim(), logoBase64);
+    updateCompanyInfo(companyName.trim(), logoBase64, geminiApiKey.trim(), geminiModelText.trim(), geminiModelImage.trim());
     setIsLoading(false);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000); // Hide saved message after 3 seconds
@@ -230,7 +236,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleSaveUser = (user: User) => {
-    if (user.id) { // Existing user
+    if (editingUser) { // Existing user
       if (!canManageUsers) return; // Double check permission
       updateUser(user);
     } else { // New user
@@ -325,6 +331,45 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
             {error && <p className="mt-2 text-sm text-red-600 text-center">{error}</p>}
+          </div>
+
+          <div className="border-t border-gray-100 pt-6 mt-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" /> Configurações de IA (Gemini)
+            </h3>
+            <div className="grid grid-cols-1 gap-6">
+              <Input
+                id="geminiApiKey"
+                label="Chave da API Gemini"
+                type="password"
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                placeholder="Insira sua chave de API do Google AI Studio"
+                disabled={!canEditCompanySettings}
+                icon={<KeyRound className="h-5 w-5 text-gray-400" />}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  id="geminiModelText"
+                  label="Modelo para Texto (Descrições/Resumos)"
+                  value={geminiModelText}
+                  onChange={(e) => setGeminiModelText(e.target.value)}
+                  placeholder="Ex: gemini-1.5-flash"
+                  disabled={!canEditCompanySettings}
+                />
+                <Input
+                  id="geminiModelImage"
+                  label="Modelo para Imagens (Futuro)"
+                  value={geminiModelImage}
+                  onChange={(e) => setGeminiModelImage(e.target.value)}
+                  placeholder="Ex: gemini-1.5-flash"
+                  disabled={!canEditCompanySettings}
+                />
+              </div>
+              <p className="text-xs text-gray-500 italic">
+                Nota: Se deixado em branco, o sistema usará a chave configurada no servidor (quando disponível).
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3">

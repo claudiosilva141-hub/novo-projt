@@ -106,7 +106,7 @@ export const LoginPage: React.FC = () => {
     // Update company info via context (also saves to localStorage)
     updateCompanyInfo(currentCompanyName.trim(), logoBase64);
     registerUser(username.trim(), password.trim(), UserRole.ADMIN); // Register initial admin user
-    const loginSuccess = login(username.trim(), password.trim()); // Login the newly created admin
+    const loginSuccess = await login(username.trim(), password.trim()); // Login the newly created admin
     if (loginSuccess) {
       navigate('/', { replace: true });
     } else {
@@ -115,7 +115,7 @@ export const LoginPage: React.FC = () => {
     setIsLoading(false);
   };
 
-  const handleLogin = (event: React.FormEvent) => {
+  const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -126,7 +126,7 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    const loginSuccess = login(username.trim(), password.trim());
+    const loginSuccess = await login(username.trim(), password.trim());
     if (loginSuccess) {
       navigate('/', { replace: true });
     } else {

@@ -15,7 +15,7 @@ interface NewProductModalProps {
 }
 
 export const NewProductModal: React.FC<NewProductModalProps> = ({ product, onSave, onCancel }) => {
-  const { checkPermission } = useAuth();
+  const { checkPermission, companyInfo } = useAuth();
   const canAddProduct = checkPermission('canAddProduct');
   const canEditProduct = checkPermission('canEditProduct');
   const canUseAI = checkPermission('canUseAI');
@@ -105,7 +105,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({ product, onSav
     }
     setIsLoadingGemini(true);
     try {
-      const desc = await generateProductDescription(name);
+      const desc = await generateProductDescription(name, companyInfo.geminiApiKey, companyInfo.geminiModelText);
       setDescription(desc);
     } catch (error) {
       alert('Erro ao gerar descrição com Gemini AI. Verifique a chave da API.');

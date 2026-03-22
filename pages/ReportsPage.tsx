@@ -11,7 +11,7 @@ import { Loader2, TrendingUp, Package, ShoppingBag, BarChart as BarChartIcon, Br
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export const ReportsPage: React.FC = () => {
-  const { products, orders, rawMaterials, checkPermission } = useAuth(); // Use checkPermission
+  const { products, orders, rawMaterials, checkPermission, companyInfo } = useAuth(); // Use checkPermission
   const canGenerateAISummary = checkPermission('canGenerateAISummary');
 
   const [reportSummary, setReportSummary] = useState<string | null>(null);
@@ -180,7 +180,7 @@ export const ReportsPage: React.FC = () => {
       ${topProductsData.map(data => `${data.name}: ${formatCurrency(data.revenue)} (${data.quantity} unidades)`).join('\n')}
     `;
     try {
-      const summary = await summarizeReport(reportContent);
+      const summary = await summarizeReport(reportContent, companyInfo.geminiApiKey, companyInfo.geminiModelText);
       setReportSummary(summary);
       setIsSummaryModalOpen(true);
     } catch (error) {

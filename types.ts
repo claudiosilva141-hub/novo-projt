@@ -2,6 +2,9 @@ export interface CompanyInfo {
   key: string; // Used by Dexie for singleton tables
   name: string;
   logo: string | null; // base64 string for image
+  geminiApiKey?: string;
+  geminiModelText?: string;
+  geminiModelImage?: string;
 }
 
 export enum UserRole {
@@ -157,7 +160,7 @@ export interface AuthContextType {
   userPermissions: UserPermissions; // New: Configurable permissions for standard users
   login: (username: string, password: string) => Promise<boolean>; // Modified: login now returns Promise<boolean>
   logout: () => void;
-  updateCompanyInfo: (name: string, logo: string | null) => void;
+  updateCompanyInfo: (name: string, logo: string | null, geminiApiKey?: string, geminiModelText?: string, geminiModelImage?: string) => void;
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;

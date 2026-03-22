@@ -45,98 +45,117 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // --- Data Loading Effect ---
   useEffect(() => {
     const loadData = async () => {
-      // Load all data from Supabase
-      const { data: companyData } = await supabase.from('company_info').select('*').eq('key', 'singleton').maybeSingle();
-      if (companyData) setCompanyInfo({ name: companyData.name, logo: companyData.logo, key: 'singleton' });
-
-      const { data: permData } = await supabase.from('user_permissions').select('*').eq('key', 'singleton').maybeSingle();
-      // Converter de snake_case do banco para camelCase do types se necessário, 
-      // mas como enviamos JSON inteiro, podemos ter de tratar. Vamos assumir as colunas.
-      if (permData) {
-        setUserPermissions({
-          key: 'singleton',
-          canAddProduct: permData.can_add_product,
-          canEditProduct: permData.can_edit_product,
-          canDeleteProduct: permData.can_delete_product,
-          canViewProductCostPrice: permData.can_view_product_cost_price,
-          canFinalizeSale: permData.can_finalize_sale,
-          canGenerateBudget: permData.can_generate_budget,
-          canCreateServiceOrder: permData.can_create_service_order,
-          canEditOrderItems: permData.can_edit_order_items,
-          canEditServiceOrder: permData.can_edit_service_order,
-          canEditOrderStatus: permData.can_edit_order_status,
-          canEditProductionDetails: permData.can_edit_production_details,
-          canEditBudget: permData.can_edit_budget,
-          canEditBudgetStatus: permData.can_edit_budget_status,
-          canAddRawMaterial: permData.can_add_raw_material,
-          canEditRawMaterial: permData.can_edit_raw_material,
-          canDeleteRawMaterial: permData.can_delete_raw_material,
-          canAddClient: permData.can_add_client,
-          canEditClient: permData.can_edit_client,
-          canDeleteClient: permData.can_delete_client,
-          canViewReports: permData.can_view_reports,
-          canGenerateAISummary: permData.can_generate_ai_summary,
-          canEditCompanySettings: permData.can_edit_company_settings,
-          canManageUsers: permData.can_manage_users,
-          canUseAI: permData.can_use_ai,
-          canPrintOrSendOrder: permData.can_print_or_send_order,
+      try {
+        console.log('Starting data load from Supabase...');
+        
+        // Load all data from Supabase
+        const { data: companyData, error: companyError } = await supabase.from('company_info').select('*').eq('key', 'singleton').maybeSingle();
+        if (companyError) console.error('Error fetching company_info:', companyError);
+        if (companyData) setCompanyInfo({ 
+          name: companyData.name, 
+          logo: companyData.logo, 
+          geminiApiKey: companyData.gemini_api_key,
+          geminiModelText: companyData.gemini_model_text,
+          geminiModelImage: companyData.gemini_model_image,
+          key: 'singleton' 
         });
-      }
 
-      const { data: loadedUsers } = await supabase.from('users').select('*');
-      if (loadedUsers) {
-        setUsers(loadedUsers);
-        setIsInitialSetup(loadedUsers.length === 0);
-      }
-
-      const storedCurrentUser = localStorage.getItem('currentUser');
-      if (storedCurrentUser) {
-        const parsedUser = JSON.parse(storedCurrentUser);
-        const existsInDb = loadedUsers?.some(u => u.id === parsedUser.id && u.username === parsedUser.username);
-        if (existsInDb) {
-          setCurrentUser(parsedUser);
-        } else {
-          localStorage.removeItem('currentUser'); // User no longer exists in DB, clear session
+        const { data: permData, error: permError } = await supabase.from('user_permissions').select('*').eq('key', 'singleton').maybeSingle();
+        if (permError) console.error('Error fetching user_permissions:', permError);
+        if (permData) {
+          setUserPermissions({
+            key: 'singleton',
+            canAddProduct: permData.can_add_product,
+            canEditProduct: permData.can_edit_product,
+            canDeleteProduct: permData.can_delete_product,
+            canViewProductCostPrice: permData.can_view_product_cost_price,
+            canFinalizeSale: permData.can_finalize_sale,
+            canGenerateBudget: permData.can_generate_budget,
+            canCreateServiceOrder: permData.can_create_service_order,
+            canEditOrderItems: permData.can_edit_order_items,
+            canEditServiceOrder: permData.can_edit_service_order,
+            canEditOrderStatus: permData.can_edit_order_status,
+            canEditProductionDetails: permData.can_edit_production_details,
+            canEditBudget: permData.can_edit_budget,
+            canEditBudgetStatus: permData.can_edit_budget_status,
+            canAddRawMaterial: permData.can_add_raw_material,
+            canEditRawMaterial: permData.can_edit_raw_material,
+            canDeleteRawMaterial: permData.can_delete_raw_material,
+            canAddClient: permData.can_add_client,
+            canEditClient: permData.can_edit_client,
+            canDeleteClient: permData.can_delete_client,
+            canViewReports: permData.can_view_reports,
+            canGenerateAISummary: permData.can_generate_ai_summary,
+            canEditCompanySettings: permData.can_edit_company_settings,
+            canManageUsers: permData.can_manage_users,
+            canUseAI: permData.can_use_ai,
+            canPrintOrSendOrder: permData.can_print_or_send_order,
+          });
         }
-      }
 
-      const { data: prodData } = await supabase.from('products').select('*');
-      if (prodData) {
-        setProducts(prodData.map(p => ({
-          id: p.id, name: p.name, description: p.description, price: p.price,
-          costPrice: p.cost_price, stock: p.stock, imageUrl: p.image_url
-        })));
-      }
+        const { data: loadedUsers, error: usersError } = await supabase.from('users').select('*');
+        if (usersError) console.error('Error fetching users:', usersError);
+        if (loadedUsers) {
+          setUsers(loadedUsers);
+          setIsInitialSetup(loadedUsers.length === 0);
+        }
 
-      const { data: rawData } = await supabase.from('raw_materials').select('*');
-      if (rawData) {
-         setRawMaterials(rawData.map(r => ({
-           id: r.id, name: r.name, description: r.description, unit: r.unit,
-           quantity: r.quantity, costPerUnit: r.cost_per_unit, supplier: r.supplier
-         })));
-      }
+        const storedCurrentUser = localStorage.getItem('currentUser');
+        if (storedCurrentUser) {
+          const parsedUser = JSON.parse(storedCurrentUser);
+          const existsInDb = loadedUsers?.some(u => u.id === parsedUser.id && u.username === parsedUser.username);
+          if (existsInDb) {
+            setCurrentUser(parsedUser);
+          } else {
+            localStorage.removeItem('currentUser'); // User no longer exists in DB, clear session
+          }
+        }
 
-      const { data: orderData } = await supabase.from('orders').select('*');
-      if (orderData) {
-        setOrders(orderData.map(o => ({
-          id: o.id, type: o.type, clientName: o.client_name, clientContact: o.client_contact,
-          clientCpf: o.client_cpf, clientZipCode: o.client_zip_code, clientStreet: o.client_street,
-          clientNumber: o.client_number, clientNeighborhood: o.client_neighborhood, 
-          clientCity: o.client_city, clientState: o.client_state, items: o.items, total: o.total,
-          productionDetails: o.production_details, status: o.status, createdAt: o.created_at, updatedAt: o.updated_at
-        })));
-      }
+        const { data: prodData, error: prodError } = await supabase.from('products').select('*');
+        if (prodError) console.error('Error fetching products:', prodError);
+        if (prodData) {
+          setProducts(prodData.map(p => ({
+            id: p.id, name: p.name, description: p.description, price: p.price,
+            costPrice: p.cost_price, stock: p.stock, imageUrl: p.image_url
+          })));
+        }
 
-      const { data: clientsData } = await supabase.from('clients').select('*');
-      if (clientsData) {
-         setClients(clientsData.map(c => ({
-           id: c.id, name: c.name, contact: c.contact, cpf: c.cpf, zipCode: c.zip_code,
-           street: c.street, number: c.number, neighborhood: c.neighborhood, city: c.city, state: c.state
-         })));
-      }
+        const { data: rawData, error: rawError } = await supabase.from('raw_materials').select('*');
+        if (rawError) console.error('Error fetching raw_materials:', rawError);
+        if (rawData) {
+           setRawMaterials(rawData.map(r => ({
+             id: r.id, name: r.name, description: r.description, unit: r.unit,
+             quantity: r.quantity, costPerUnit: r.cost_per_unit, supplier: r.supplier
+           })));
+        }
 
-      setDataLoaded(true);
-      console.log('All data loaded from Supabase.');
+        const { data: orderData, error: orderError } = await supabase.from('orders').select('*');
+        if (orderError) console.error('Error fetching orders:', orderError);
+        if (orderData) {
+          setOrders(orderData.map(o => ({
+            id: o.id, type: o.type, clientName: o.client_name, clientContact: o.client_contact,
+            clientCpf: o.client_cpf, clientZipCode: o.client_zip_code, clientStreet: o.client_street,
+            clientNumber: o.client_number, clientNeighborhood: o.client_neighborhood, 
+            clientCity: o.client_city, clientState: o.client_state, items: o.items, total: o.total,
+            productionDetails: o.production_details, status: o.status, createdAt: o.created_at, updatedAt: o.updated_at
+          })));
+        }
+
+        const { data: clientsData, error: clientsError } = await supabase.from('clients').select('*');
+        if (clientsError) console.error('Error fetching clients:', clientsError);
+        if (clientsData) {
+           setClients(clientsData.map(c => ({
+             id: c.id, name: c.name, contact: c.contact, cpf: c.cpf, zipCode: c.zip_code,
+             street: c.street, number: c.number, neighborhood: c.neighborhood, city: c.city, state: c.state
+           })));
+        }
+
+        setDataLoaded(true);
+        console.log('All data loaded from Supabase successfully.');
+      } catch (err) {
+        console.error('Critical error loading data from Supabase:', err);
+        setDataLoaded(true); // Still set data loaded to avoid infinite loading screen, but user might see empty state
+      }
     };
 
     loadData();
@@ -172,9 +191,20 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     navigate('/login', { replace: true });
   };
 
-  const updateCompanyInfo = async (name: string, logo: string | null) => {
-    setCompanyInfo({ ...companyInfo, name, logo });
-    await supabase.from('company_info').upsert({ key: 'singleton', name, logo });
+  const updateCompanyInfo = async (name: string, logo: string | null, geminiApiKey?: string, geminiModelText?: string, geminiModelImage?: string) => {
+    setCompanyInfo({ ...companyInfo, name, logo, geminiApiKey, geminiModelText, geminiModelImage });
+    const { error } = await supabase.from('company_info').upsert({ 
+      key: 'singleton', 
+      name, 
+      logo,
+      gemini_api_key: geminiApiKey,
+      gemini_model_text: geminiModelText,
+      gemini_model_image: geminiModelImage
+    });
+    if (error) {
+      console.error('Error updating company info:', error);
+      alert('Erro ao atualizar informações da empresa: ' + error.message);
+    }
   };
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
@@ -182,7 +212,12 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       name: product.name, description: product.description, price: product.price, 
       cost_price: product.costPrice, stock: product.stock, image_url: product.imageUrl
     }).select().single();
-    if (data && !error) {
+    if (error) {
+      console.error('Error adding product:', error);
+      alert('Erro ao adicionar produto: ' + error.message);
+      return;
+    }
+    if (data) {
       setProducts((prev) => [...prev, {
         id: data.id, name: data.name, description: data.description, price: data.price,
         costPrice: data.cost_price, stock: data.stock, imageUrl: data.image_url
@@ -194,15 +229,24 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setProducts((prev) =>
       prev.map((prod) => (prod.id === updatedProduct.id ? updatedProduct : prod))
     );
-    await supabase.from('products').update({
+    const { error } = await supabase.from('products').update({
        name: updatedProduct.name, description: updatedProduct.description, price: updatedProduct.price, 
        cost_price: updatedProduct.costPrice, stock: updatedProduct.stock, image_url: updatedProduct.imageUrl
     }).eq('id', updatedProduct.id);
+    if (error) {
+      console.error('Error updating product:', error);
+      alert('Erro ao atualizar produto: ' + error.message);
+      // Revert local state would be better, but keeping it simple for now
+    }
   };
 
   const deleteProduct = async (id: string) => {
     setProducts((prev) => prev.filter((prod) => prod.id !== id));
-    await supabase.from('products').delete().eq('id', id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) {
+       console.error('Error deleting product:', error);
+       alert('Erro ao excluir produto: ' + error.message);
+    }
   };
 
   const addRawMaterial = async (rawMaterial: Omit<RawMaterial, 'id'>) => {
@@ -210,7 +254,12 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       name: rawMaterial.name, description: rawMaterial.description, unit: rawMaterial.unit,
       quantity: rawMaterial.quantity, cost_per_unit: rawMaterial.costPerUnit, supplier: rawMaterial.supplier
     }).select().single();
-    if (data && !error) {
+    if (error) {
+      console.error('Error adding raw material:', error);
+      alert('Erro ao adicionar matéria-prima: ' + error.message);
+      return;
+    }
+    if (data) {
        setRawMaterials((prev) => [...prev, {
          id: data.id, name: data.name, description: data.description, unit: data.unit,
          quantity: data.quantity, costPerUnit: data.cost_per_unit, supplier: data.supplier
@@ -222,15 +271,23 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setRawMaterials((prev) =>
       prev.map((rm) => (rm.id === updatedRawMaterial.id ? updatedRawMaterial : rm))
     );
-    await supabase.from('raw_materials').update({
+    const { error } = await supabase.from('raw_materials').update({
        name: updatedRawMaterial.name, description: updatedRawMaterial.description, unit: updatedRawMaterial.unit,
        quantity: updatedRawMaterial.quantity, cost_per_unit: updatedRawMaterial.costPerUnit, supplier: updatedRawMaterial.supplier
     }).eq('id', updatedRawMaterial.id);
+    if (error) {
+      console.error('Error updating raw material:', error);
+      alert('Erro ao atualizar matéria-prima: ' + error.message);
+    }
   };
 
   const deleteRawMaterial = async (id: string) => {
     setRawMaterials((prev) => prev.filter((rm) => rm.id !== id));
-    await supabase.from('raw_materials').delete().eq('id', id);
+    const { error } = await supabase.from('raw_materials').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting raw material:', error);
+      alert('Erro ao excluir matéria-prima: ' + error.message);
+    }
   };
 
   const addOrder = (orderToSave: Order): Order => {
@@ -246,8 +303,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         client_city: newOrder.clientCity, client_state: newOrder.clientState, items: newOrder.items,
         total: newOrder.total, production_details: newOrder.productionDetails, status: newOrder.status,
         created_at: newOrder.createdAt, updated_at: newOrder.updatedAt
-     }).select().single().then(({data}) => {
-         if (data) {
+     }).select().single().then(({data, error}) => {
+         if (error) {
+            console.error('Error adding order:', error);
+            alert('Erro ao salvar pedido: ' + error.message);
+         } else if (data) {
             setOrders(currentList => currentList.map(o => o.id === tempId ? { ...newOrder, id: data.id } : o));
          }
      });
@@ -259,7 +319,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setOrders((prev) =>
       prev.map((ord) => (ord.id === updatedOrder.id ? updatedOrder : ord))
     );
-    await supabase.from('orders').update({
+    const { error } = await supabase.from('orders').update({
         type: updatedOrder.type, client_name: updatedOrder.clientName, client_contact: updatedOrder.clientContact,
         client_cpf: updatedOrder.clientCpf, client_zip_code: updatedOrder.clientZipCode, client_street: updatedOrder.clientStreet,
         client_number: updatedOrder.clientNumber, client_neighborhood: updatedOrder.clientNeighborhood, 
@@ -267,14 +327,24 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         total: updatedOrder.total, production_details: updatedOrder.productionDetails, status: updatedOrder.status,
         updated_at: updatedOrder.updatedAt
     }).eq('id', updatedOrder.id);
+    if (error) {
+      console.error('Error updating order:', error);
+      alert('Erro ao atualizar pedido: ' + error.message);
+    }
   };
 
   const addClient = async (client: Omit<Client, 'id'>) => {
-    const { data } = await supabase.from('clients').insert({
+    const { data, error } = await supabase.from('clients').insert({
         name: client.name, contact: client.contact, cpf: client.cpf, zip_code: client.zipCode,
         street: client.street, number: client.number, neighborhood: client.neighborhood, 
         city: client.city, state: client.state
     }).select().single();
+
+    if (error) {
+      console.error('Error adding client:', error);
+      alert('Erro ao adicionar cliente: ' + error.message);
+      return;
+    }
 
     if (data) {
        setClients((prev) => [...prev, {
@@ -288,23 +358,37 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setClients((prev) =>
       prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
     );
-    await supabase.from('clients').update({
+    const { error } = await supabase.from('clients').update({
         name: updatedClient.name, contact: updatedClient.contact, cpf: updatedClient.cpf, zip_code: updatedClient.zipCode,
         street: updatedClient.street, number: updatedClient.number, neighborhood: updatedClient.neighborhood, 
         city: updatedClient.city, state: updatedClient.state
     }).eq('id', updatedClient.id);
+    if (error) {
+       console.error('Error updating client:', error);
+       alert('Erro ao atualizar cliente: ' + error.message);
+    }
   };
 
   const deleteClient = async (id: string) => {
     setClients((prev) => prev.filter((c) => c.id !== id));
-    await supabase.from('clients').delete().eq('id', id);
+    const { error } = await supabase.from('clients').delete().eq('id', id);
+    if (error) {
+       console.error('Error deleting client:', error);
+       alert('Erro ao excluir cliente: ' + error.message);
+    }
   };
 
   // User management functions
   const registerUser = async (username: string, password: string, role: UserRole) => {
-    const { data } = await supabase.from('users').insert({
+    const { data, error } = await supabase.from('users').insert({
        username, password, role
     }).select().single();
+
+    if (error) {
+       console.error('Error registering user:', error);
+       alert('Erro ao registrar usuário: ' + error.message);
+       return;
+    }
 
     if (data) {
        setUsers((prev) => [...prev, data as User]);
@@ -316,9 +400,13 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setUsers((prev) =>
       prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
     );
-    await supabase.from('users').update({
+    const { error } = await supabase.from('users').update({
       username: updatedUser.username, password: updatedUser.password, role: updatedUser.role
     }).eq('id', updatedUser.id);
+    if (error) {
+      console.error('Error updating user:', error);
+      alert('Erro ao atualizar usuário: ' + error.message);
+    }
   };
   
   const deleteUser = async (id: string) => {
@@ -326,14 +414,18 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     if (currentUser?.id === id) {
       setCurrentUser(null);
     }
-    await supabase.from('users').delete().eq('id', id);
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting user:', error);
+      alert('Erro ao excluir usuário: ' + error.message);
+    }
   };
 
   // Function to update configurable permissions
   const updateUserPermissions = async (permissions: UserPermissions) => {
     setUserPermissions(permissions);
     
-    await supabase.from('user_permissions').upsert({
+    const { error } = await supabase.from('user_permissions').upsert({
        key: 'singleton',
        can_add_product: permissions.canAddProduct,
        can_edit_product: permissions.canEditProduct,
@@ -361,6 +453,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
        can_use_ai: permissions.canUseAI,
        can_print_or_send_order: permissions.canPrintOrSendOrder,
     });
+    if (error) {
+       console.error('Error updating user permissions:', error);
+       alert('Erro ao atualizar permissões: ' + error.message);
+    }
   };
 
   // Helper function to check permissions based on user role and configuration
@@ -432,7 +528,7 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <AuthProvider>
-        <Routes>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
