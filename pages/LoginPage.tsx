@@ -93,12 +93,17 @@ export const LoginPage: React.FC = () => {
       return;
     }
     if (!username.trim() || !password.trim()) {
-      setError('Nome de usuário e senha são obrigatórios.');
+      setError('E-mail e senha são obrigatórios.');
+      setIsLoading(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+      setError('Por favor, informe um e-mail válido.');
       setIsLoading(false);
       return;
     }
     if (users.some(u => u.username === username.trim())) {
-      setError('Nome de usuário já existe.');
+      setError('Este e-mail já está cadastrado.');
       setIsLoading(false);
       return;
     }
@@ -121,7 +126,12 @@ export const LoginPage: React.FC = () => {
     setError(null);
 
     if (!username.trim() || !password.trim()) {
-      setError('Nome de usuário e senha são obrigatórios.');
+      setError('E-mail e senha são obrigatórios.');
+      setIsLoading(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+      setError('Por favor, informe um e-mail válido.');
       setIsLoading(false);
       return;
     }
@@ -130,7 +140,7 @@ export const LoginPage: React.FC = () => {
     if (loginSuccess) {
       navigate('/', { replace: true });
     } else {
-      setError('Nome de usuário ou senha inválidos.');
+      setError('E-mail ou senha inválidos.');
     }
     setIsLoading(false);
   };
@@ -189,11 +199,11 @@ export const LoginPage: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-800 text-center mt-6 mb-4">Criar Usuário Administrador</h3>
           <Input
             id="adminUsername"
-            label="Nome de Usuário"
-            type="text"
+            label="E-mail"
+            type="email"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Escolha um nome de usuário"
+            placeholder="Seu e-mail profissional"
             required
             icon={<User className="h-5 w-5 text-gray-400" />}
           />
@@ -230,11 +240,11 @@ export const LoginPage: React.FC = () => {
             </p>
             <Input
               id="username"
-              label="Nome de Usuário"
-              type="text"
+              label="E-mail"
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Seu nome de usuário"
+              placeholder="Seu e-mail"
               required
               icon={<User className="h-5 w-5 text-gray-400" />}
             />

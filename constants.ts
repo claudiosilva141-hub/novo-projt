@@ -8,7 +8,7 @@ export const GEMINI_MODEL_IMAGE = 'gemini-2.5-flash-image'; // Or 'gemini-3-pro-
 export const DEFAULT_PRODUCT_IMAGE_PLACEHOLDER = 'https://picsum.photos/300/300';
 
 // Reintroduced: Default admin credentials for initial setup
-export const ADMIN_USERNAME_DEFAULT = 'admin';
+export const ADMIN_USERNAME_DEFAULT = 'admin@empresa.com.br';
 export const ADMIN_PASSWORD_DEFAULT = 'admin123'; // Insecure for production, for demo purposes
 
 export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {

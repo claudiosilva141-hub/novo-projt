@@ -39,7 +39,11 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
-        if (!username.trim()) errors.username = 'Nome de usuário é obrigatório.';
+        if (!username.trim()) {
+            errors.username = 'E-mail é obrigatório.';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+            errors.username = 'Por favor, informe um e-mail válido.';
+        }
         if (!password.trim() && !user) errors.password = 'Senha é obrigatória para novos usuários.'; // Password required only for new users
         if (!role) errors.role = 'Função é obrigatória.';
         setFormErrors(errors);
@@ -82,7 +86,8 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
                     id="username"
-                    label="Nome de Usuário"
+                    label="E-mail"
+                    type="email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     error={formErrors.username}
@@ -242,7 +247,7 @@ export const SettingsPage: React.FC = () => {
     } else { // New user
       if (!canManageUsers) return; // Double check permission
       if (users.some(u => u.username === user.username)) {
-        alert('Nome de usuário já existe.');
+        alert('E-mail já cadastrado.');
         return;
       }
       registerUser(user.username, user.password || '', user.role);
@@ -410,7 +415,7 @@ export const SettingsPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nome de Usuário
+                      E-mail
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Função
