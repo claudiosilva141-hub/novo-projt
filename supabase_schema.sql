@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   username text UNIQUE NOT NULL,
   password text NOT NULL,
-  role text NOT NULL DEFAULT 'user'
+  role text NOT NULL DEFAULT 'user',
+  full_name text
 );
 
 -- 4. products
