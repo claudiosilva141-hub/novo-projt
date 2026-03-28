@@ -100,15 +100,19 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           setIsInitialSetup(loadedUsers.length === 0);
         }
 
-        const storedCurrentUser = localStorage.getItem('currentUser');
-        if (storedCurrentUser) {
-          const parsedUser = JSON.parse(storedCurrentUser);
-          const existsInDb = loadedUsers?.some(u => u.id === parsedUser.id && u.username === parsedUser.username);
-          if (existsInDb) {
-            setCurrentUser(parsedUser);
-          } else {
-            localStorage.removeItem('currentUser'); // User no longer exists in DB, clear session
-          }
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const userObj: User = {
+            id: authUser.id,
+            username: authUser.email || '',
+            fullName: authUser.user_metadata?.full_name || '',
+            role: authUser.user_metadata?.role || UserRole.USER,
+            password: '', // Password is not stored locally with Supabase Auth
+          };
+          setCurrentUser(userObj);
+        } else {
+          setCurrentUser(null);
+          localStorage.removeItem('currentUser');
         }
 
         const { data: prodData, error: prodError } = await supabase.from('products').select('*');
@@ -161,32 +165,48 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     loadData();
   }, []); // Run only once on mount
 
-  // Current User (session state still in localStorage for simplicity across reloads)
+  // Listen for auth changes
   useEffect(() => {
-    if (!dataLoaded) return;
-    if (currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-  }, [currentUser, dataLoaded]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const userObj: User = {
+          id: session.user.id,
+          username: session.user.email || '',
+          fullName: session.user.user_metadata?.full_name || '',
+          role: session.user.user_metadata?.role || UserRole.USER,
+          password: '',
+        };
+        setCurrentUser(userObj);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
 
   // isAuthenticated is true if currentUser exists
   const isAuthenticated = !!currentUser;
 
   // Login function
-  const login = async (usernameInput: string, passwordInput: string): Promise<boolean> => {
-    const { data: user } = await supabase.from('users').select('*').eq('username', usernameInput).eq('password', passwordInput).maybeSingle();
-    if (user) {
-      setCurrentUser(user as User);
-      return true;
+  const login = async (emailInput: string, passwordInput: string): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailInput,
+      password: passwordInput,
+    });
+    
+    if (error) {
+      console.error('Login error:', error.message);
+      return false;
     }
-    return false;
+    
+    return !!data.user;
   };
 
   // Logout function
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     navigate('/login', { replace: true });
   };
@@ -379,45 +399,123 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
 
   // User management functions
-  const registerUser = async (username: string, password: string, role: UserRole) => {
-    const { data, error } = await supabase.from('users').insert({
-       username, password, role
-    }).select().single();
+  const registerUser = async (email: string, password: string, role: UserRole, fullName: string = '') => {
+    console.log('Registering user with Supabase Auth:', { email, role, fullName });
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: role,
+        }
+      }
+    });
 
     if (error) {
-       console.error('Error registering user:', error);
-       alert('Erro ao registrar usuário: ' + error.message);
-       return;
+      console.error('Error registering user:', error);
+      alert('Erro ao registrar usuário: ' + error.message);
+      throw error;
     }
 
-    if (data) {
-       setUsers((prev) => [...prev, data as User]);
-       setIsInitialSetup(false);
+    if (data.user) {
+      // Also insert into our users table to maintain compatibility with existing logic
+      await supabase.from('users').upsert({
+        id: data.user.id,
+        username: email,
+        password: '', // No longer storing password in our table
+        role,
+        full_name: fullName
+      });
+      
+      setUsers((prev) => [...prev, {
+        id: data.user!.id,
+        username: email,
+        fullName,
+        role,
+        password: ''
+      }]);
+      setIsInitialSetup(false);
     }
+  };
+
+  const sendOtp = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      console.error('Error sending OTP:', error.message);
+      throw error;
+    }
+  };
+
+  const verifyOtp = async (email: string, token: string): Promise<boolean> => {
+    // Note: Suapbase verifyOtp handles both signup and signin tokens
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup' // or 'signin' depending on flow, but 'signup' is what's used after signUp
+    });
+
+    if (error) {
+       // Try 'signin' type if 'signup' fails, in case user already existed
+       const { data: data2, error: error2 } = await supabase.auth.verifyOtp({
+         email,
+         token,
+         type: 'magiclink'
+       });
+       if (error2) {
+         console.error('OTP verification error:', error2.message);
+         return false;
+       }
+       return !!data2.user;
+    }
+    
+    return !!data.user;
   };
 
   const updateUser = async (updatedUser: User) => {
+    console.log('Updating user:', updatedUser);
+    
+    // Update Auth user metadata
+    const { error: authError } = await supabase.auth.updateUser({
+      data: {
+        full_name: updatedUser.fullName,
+        role: updatedUser.role
+      }
+    });
+
+    if (authError) console.error('Error updating auth metadata:', authError);
+
+    const { error } = await supabase.from('users').update({
+      username: updatedUser.username, 
+      role: updatedUser.role,
+      full_name: updatedUser.fullName
+    }).eq('id', updatedUser.id);
+    
+    if (error) {
+      console.error('Error updating user table:', error);
+      alert('Erro ao atualizar usuário: ' + error.message);
+      throw error;
+    }
+
     setUsers((prev) =>
       prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
     );
-    const { error } = await supabase.from('users').update({
-      username: updatedUser.username, password: updatedUser.password, role: updatedUser.role
-    }).eq('id', updatedUser.id);
-    if (error) {
-      console.error('Error updating user:', error);
-      alert('Erro ao atualizar usuário: ' + error.message);
-    }
   };
   
   const deleteUser = async (id: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    if (currentUser?.id === id) {
-      setCurrentUser(null);
-    }
+    // Note: Deleting from auth.users requires admin API. 
+    // For now we delete from our public users table and let the session expire or handle it manually.
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) {
       console.error('Error deleting user:', error);
       alert('Erro ao excluir usuário: ' + error.message);
+      throw error;
+    }
+
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    if (currentUser?.id === id) {
+      logout();
     }
   };
 
@@ -500,6 +598,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     deleteUser,
     updateUserPermissions,
     checkPermission,
+    sendOtp,
+    verifyOtp,
   };
 
   if (!dataLoaded) {

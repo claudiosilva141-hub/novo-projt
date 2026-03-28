@@ -15,6 +15,7 @@ export enum UserRole {
 export interface User {
   id: string;
   username: string;
+  fullName: string;
   password: string; // Stored in plain text for simplicity in this local app example, but insecure for production
   role: UserRole;
 }
@@ -172,9 +173,11 @@ export interface AuthContextType {
   addClient: (client: Client) => void;
   updateClient: (client: Client) => void;
   deleteClient: (id: string) => void;
-  registerUser: (username: string, password: string, role: UserRole) => void; // New: Register a new user
-  updateUser: (user: User) => void; // New: Update existing user
+  registerUser: (username: string, password: string, role: UserRole, fullName?: string) => Promise<void>; // New: Register a new user
+  updateUser: (user: User) => Promise<void>; // New: Update existing user
   deleteUser: (id: string) => void; // New: Delete user
   updateUserPermissions: (permissions: UserPermissions) => void; // New: Update configurable permissions
   checkPermission: (permissionName: keyof UserPermissions) => boolean; // New: Helper to check permission
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, token: string) => Promise<boolean>;
 }

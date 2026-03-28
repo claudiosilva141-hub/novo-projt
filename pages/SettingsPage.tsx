@@ -12,13 +12,14 @@ interface UserModalProps {
     user: User | null; // Null for new user
     isOpen: boolean;
     onClose: () => void;
-    onSave: (user: User) => void;
+    onSave: (user: User) => Promise<void> | void;
     currentUserId: string | undefined; // To prevent changing own role
     canManageUsers: boolean; // Use permission directly
 }
 
 const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, currentUserId, canManageUsers }) => { // Added canManageUsers prop
     const [username, setUsername] = useState(user?.username || '');
+    const [fullName, setFullName] = useState(user?.fullName || '');
     const [password, setPassword] = useState(user?.password || '');
     const [role, setRole] = useState(user?.role || UserRole.USER);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -27,10 +28,12 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
     useEffect(() => {
         if (user) {
             setUsername(user.username);
+            setFullName(user.fullName || '');
             setPassword(user.password || ''); // Do not expose actual password if not allowed
             setRole(user.role);
         } else {
             setUsername('');
+            setFullName('');
             setPassword('');
             setRole(UserRole.USER);
         }
@@ -40,8 +43,9 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
         if (!username.trim()) {
-            errors.username = 'E-mail é obrigatório.';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+            errors.username = 'Usuário/E-mail é obrigatório.';
+        } else if (username.trim() !== (user?.username || '') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+            // Only enforce email regex if it's a new username
             errors.username = 'Por favor, informe um e-mail válido.';
         }
         if (!password.trim() && !user) errors.password = 'Senha é obrigatória para novos usuários.'; // Password required only for new users
@@ -50,26 +54,32 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
         return Object.keys(errors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!canManageUsers) { // Check permission before attempting to save
             alert('Você não tem permissão para gerenciar usuários.');
             return;
         }
         if (!validateForm()) {
+            const firstError = Object.values(formErrors)[0] || 'Por favor, corrija os erros no formulário.';
+            alert(firstError); // Make it very obvious what's wrong
             return;
         }
 
         setSaveLoading(true);
 
-        const userToSave: User = {
-            id: user?.id || Date.now().toString(),
+        const userToSave: any = {
             username: username.trim(),
-            password: password.trim() || user?.password || '', // Keep existing password if not changed, ensure it's not undefined
+            fullName: fullName.trim(),
+            password: password.trim() || user?.password || '', 
             role: role,
         };
+        
+        if (user?.id) {
+            userToSave.id = user.id;
+        }
 
-        onSave(userToSave);
+        await onSave(userToSave as User);
         setSaveLoading(false);
         onClose();
     };
@@ -93,6 +103,16 @@ const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave, cu
                     error={formErrors.username}
                     required
                     disabled={!!user || !canManageUsers} // Username cannot be changed after creation, and only admin can edit
+                    icon={<UserIcon className="h-5 w-5 text-gray-400" />}
+                />
+                <Input
+                    id="fullName"
+                    label="Nome Completo"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Ex: Alexandre Silva"
+                    disabled={!canManageUsers}
                     icon={<UserIcon className="h-5 w-5 text-gray-400" />}
                 />
                 <Input
@@ -240,21 +260,26 @@ export const SettingsPage: React.FC = () => {
     setEditingUser(null);
   };
 
-  const handleSaveUser = (user: User) => {
-    if (editingUser) { // Existing user
-      if (!canManageUsers) return; // Double check permission
-      updateUser(user);
-    } else { // New user
-      if (!canManageUsers) return; // Double check permission
-      if (users.some(u => u.username === user.username)) {
-        alert('E-mail já cadastrado.');
-        return;
+  const handleSaveUser = async (user: User) => {
+    try {
+      if (editingUser) { // Existing user
+        if (!canManageUsers) return; // Double check permission
+        await updateUser(user);
+      } else { // New user
+        if (!canManageUsers) return; // Double check permission
+        if (users.some(u => u.username === user.username)) {
+          alert('E-mail já cadastrado.');
+          return;
+        }
+        await registerUser(user.username, user.password || '', user.role, user.fullName);
       }
-      registerUser(user.username, user.password || '', user.role);
+    } catch (err) {
+      // Error is already alerted in App.tsx, we just need to catch to prevent closing modal
+      throw err;
     }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (!canManageUsers) {
       alert('Você não tem permissão para excluir usuários.');
       return;
@@ -264,7 +289,11 @@ export const SettingsPage: React.FC = () => {
       return;
     }
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
-      deleteUser(userId);
+      try {
+        await deleteUser(userId);
+      } catch (err) {
+        // Error already alerted
+      }
     }
   };
 
