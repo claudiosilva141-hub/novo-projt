@@ -128,15 +128,15 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto bg-white flex flex-col md:flex-row font-sans text-gray-900">
       {/* Top Header - Mobile & Desktop */}
-      <div className="absolute top-0 left-0 right-0 h-16 px-8 flex items-center justify-between z-10">
-        <div className="font-bold text-lg tracking-tight uppercase">{companyInfo.name || 'MÃE & FILHO CONFECÇÃO'}</div>
-        <div className="bg-indigo-600 text-white p-1 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors">
-          <HelpCircle size={18} />
+      <div className="absolute top-0 left-0 right-0 h-20 px-8 flex items-center justify-between z-20">
+        <div className="font-bold text-sm tracking-[0.3em] uppercase opacity-40">{companyInfo.name || 'MÃE & FILHO CONFECÇÃO'}</div>
+        <div className="bg-white/80 backdrop-blur-sm shadow-sm border border-gray-100 text-gray-400 p-2 rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-all">
+          <HelpCircle size={16} />
         </div>
       </div>
 
       {/* Left Panel: Branding & Features */}
-      <div className="w-full md:w-1/2 bg-[#F8F9FF] p-8 md:p-16 flex flex-col justify-center relative overflow-hidden pt-24 md:pt-16">
+      <div className="w-full md:w-1/2 bg-[#F8F9FF] p-8 md:p-16 flex flex-col justify-center relative overflow-hidden pt-32 md:pt-24">
         {/* Decorative elements */}
         <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50"></div>
         <div className="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-indigo-100 rounded-full blur-3xl opacity-30"></div>
@@ -154,10 +154,13 @@ export const LoginPage: React.FC = () => {
             )}
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-2 tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-black leading-tight mb-2 tracking-tighter text-gray-900">
             MÃE & FILHO
           </h1>
-          <p className="text-lg text-gray-500 mb-12 tracking-[0.2em] uppercase">Confecção</p>
+          <div className="flex items-center space-x-4 mb-12">
+            <span className="h-px w-8 bg-indigo-600/30"></span>
+            <p className="text-sm font-bold text-indigo-600/60 tracking-[0.4em] uppercase">Confecção</p>
+          </div>
 
           <h2 className="text-5xl md:text-6xl font-bold mb-8 tracking-tight">
             {view === 'verify' ? (
