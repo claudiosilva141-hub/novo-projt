@@ -161,16 +161,16 @@ export const LoginPage: React.FC = () => {
 
           <h2 className="text-5xl md:text-6xl font-bold mb-8 tracking-tight">
             {view === 'verify' ? (
-              <>Seu portal para <br /><span className="text-indigo-600 italic">elegância protegida.</span></>
+              <>Seu portal para <br /><span className="text-indigo-600 italic">gestão de alta costura.</span></>
             ) : (
-              <>A curadoria encontra <br />a segurança <span className="text-indigo-600 italic underline decoration-wavy decoration-indigo-200">intransigente.</span></>
+              <>A tradição encontra <br />a eficiência <span className="text-indigo-600 italic underline decoration-wavy decoration-indigo-200">produtiva.</span></>
             )}
           </h2>
 
           <p className="text-gray-500 text-lg mb-12 max-w-sm leading-relaxed">
             {view === 'verify' ? 
-              'Entre no limiar de um ambiente seguro e de alto padrão, projetado para quem valoriza a privacidade tanto quanto a estética.' :
-              'Junte-se a uma comunidade de colecionadores que valorizam a privacidade tanto quanto a estética. Seus ativos digitais merecem uma galeria que seja ao mesmo tempo bela e impenetrável.'
+              'Entre no limiar de um sistema de gestão robusto, projetado para quem valoriza a organização tanto quanto a qualidade das peças.' :
+              'Gerencie sua confecção com precisão impecável. Da modelagem à entrega final, tenha o controle total da sua produção e clientes em um único lugar seguro.'
             }
           </p>
 
@@ -180,16 +180,16 @@ export const LoginPage: React.FC = () => {
               <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <ShieldCheck size={20} />
               </div>
-              <h3 className="font-bold mb-1">Organização Inteligente</h3>
-              <p className="text-sm text-gray-400">Organização baseada em IA que aprende.</p>
+              <h3 className="font-bold mb-1">Gestão Integrada</h3>
+              <p className="text-sm text-gray-400">Controle estoques, pedidos e clientes com inteligência.</p>
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 group hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <Layers size={20} />
               </div>
-              <h3 className="font-bold mb-1">Backup Constante</h3>
-              <p className="text-sm text-gray-400">Dados sempre seguros em nuvem híbrida.</p>
+              <h3 className="font-bold mb-1">Fluxo de Produção</h3>
+              <p className="text-sm text-gray-400">Acompanhe cada etapa da sua confecção em tempo real.</p>
             </div>
           </div>
         </div>
@@ -200,8 +200,8 @@ export const LoginPage: React.FC = () => {
         <div className="w-full max-w-md">
           {view === 'signup' && (
             <div className="animate-in fade-in slide-in-from-right duration-500">
-              <h2 className="text-4xl font-bold mb-2 tracking-tight">Criar Conta</h2>
-              <p className="text-gray-400 mb-8">Comece sua jornada na galeria segura hoje.</p>
+              <h2 className="text-4xl font-bold mb-2 tracking-tight">Acessar Sistema</h2>
+              <p className="text-gray-400 mb-8">Gerencie sua produção com eficiência máxima.</p>
 
               <form onSubmit={handleSignUp} className="space-y-5">
                 <div>
@@ -370,7 +370,7 @@ export const LoginPage: React.FC = () => {
           {view === 'login' && (
             <div className="animate-in fade-in slide-in-from-right duration-500">
               <h2 className="text-4xl font-bold mb-2 tracking-tight">Bem-vindo(a)</h2>
-              <p className="text-gray-400 mb-8">Faça login para gerenciar sua galeria.</p>
+              <p className="text-gray-400 mb-8">Faça login para gerenciar sua confecção.</p>
 
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
