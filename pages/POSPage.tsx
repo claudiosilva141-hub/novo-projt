@@ -31,6 +31,7 @@ export const POSPage: React.FC = () => {
   const [clientState, setClientState] = useState('');
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
+  const [isClientFound, setIsClientFound] = useState(false);
 
   const [orderType, setOrderType] = useState<'sale' | 'service-order' | 'budget'>('sale');
   const [servicePrice, setServicePrice] = useState('0.00');
@@ -120,6 +121,29 @@ export const POSPage: React.FC = () => {
       setCepError(null);
     }
   };
+
+  // --- Client Search by CPF ---
+  React.useEffect(() => {
+    const cleanCpf = clientCpf.replace(/\D/g, '');
+    if (cleanCpf.length === 11) {
+      const foundClient = clients.find(c => c.cpf.replace(/\D/g, '') === cleanCpf);
+      if (foundClient) {
+        setClientName(foundClient.name);
+        setClientContact(foundClient.contact);
+        setClientZipCode(foundClient.zipCode);
+        setClientStreet(foundClient.street);
+        setClientNumber(foundClient.number);
+        setClientNeighborhood(foundClient.neighborhood);
+        setClientCity(foundClient.city);
+        setClientState(foundClient.state);
+        setIsClientFound(true);
+      } else {
+        setIsClientFound(false);
+      }
+    } else {
+      setIsClientFound(false);
+    }
+  }, [clientCpf, clients]);
 
   const handleCheckout = () => {
     if (orderType === 'sale' && !canFinalizeSale) {
@@ -491,8 +515,15 @@ export const POSPage: React.FC = () => {
               onChange={(e) => setClientCpf(e.target.value)}
               placeholder="Ex: 123.456.789-00"
               maxLength={14}
-              className="mb-4"
+              className="mb-1"
+              icon={isClientFound ? <CheckCircle className="h-5 w-5 text-green-500" /> : undefined}
             />
+            {isClientFound && (
+              <p className="text-xs text-green-600 mb-4 font-medium flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" /> Cliente cadastrado encontrado! Dados preenchidos.
+              </p>
+            )}
+            {!isClientFound && <div className="mb-4" />}
 
             <h3 className="text-lg font-semibold text-gray-800 mb-3 pt-4 border-t border-gray-100">Endereço do Cliente</h3>
             <Input
