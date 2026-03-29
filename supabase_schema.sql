@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS clients (
 
 -- 7. orders
 CREATE TABLE IF NOT EXISTS orders (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  id text PRIMARY KEY,
   type text NOT NULL,
   client_name text NOT NULL,
   client_contact text,

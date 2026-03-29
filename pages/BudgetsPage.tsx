@@ -6,7 +6,7 @@ import { Input, Select } from '../components/Input';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { formatDateTime } from '../utils/dateFormatter';
 import { ORDER_STATUS_COLORS, ORDER_STATUS_OPTIONS } from '../constants';
-import { Edit, Eye, Printer, MessageSquareText, Plus } from 'lucide-react';
+import { Edit, Eye, Printer, MessageSquareText, Plus, DollarSign } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { generateWhatsAppInvoiceLink } from '../utils/whatsappLinkGenerator';
 import { EditOrderModal } from './EditOrderModal';
@@ -18,6 +18,7 @@ export const BudgetsPage: React.FC = () => {
   const canEditBudget = checkPermission('canEditBudget');
   const canEditBudgetStatus = checkPermission('canEditBudgetStatus');
   const canPrintOrSendOrder = checkPermission('canPrintOrSendOrder');
+  const canFinalizeSale = checkPermission('canFinalizeSale');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
@@ -55,6 +56,24 @@ export const BudgetsPage: React.FC = () => {
     const orderToUpdate = orders.find(o => o.id === orderId);
     if (orderToUpdate) {
       updateOrder({ ...orderToUpdate, status: newStatus, updatedAt: new Date().toISOString() });
+    }
+  };
+
+  const handleConvertToSale = (order: Order) => {
+    if (!canFinalizeSale) {
+      alert('Você não tem permissão para finalizar vendas.');
+      return;
+    }
+    
+    if (window.confirm(`Deseja realmente converter o orçamento #${order.id} em uma venda concluída?`)) {
+      updateOrder({
+        ...order,
+        type: 'sale',
+        status: OrderStatus.COMPLETED,
+        updatedAt: new Date().toISOString()
+      });
+      alert('Orçamento convertido em venda com sucesso!');
+      closeViewModal();
     }
   };
 
@@ -342,6 +361,18 @@ export const BudgetsPage: React.FC = () => {
                         containerClassName="inline-block"
                         disabled={!canEditBudgetStatus} // Disabled if no permission
                       />
+                      {canFinalizeSale && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleConvertToSale(order)}
+                          className="text-green-600 hover:text-green-900 ml-2"
+                          icon={<DollarSign className="h-4 w-4" />}
+                          title="Finalizar como Venda"
+                        >
+                          Vender
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -399,6 +430,16 @@ export const BudgetsPage: React.FC = () => {
 
             {canPrintOrSendOrder && (
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
+                    {canFinalizeSale && (
+                        <Button
+                            variant="primary"
+                            onClick={() => handleConvertToSale(selectedOrder)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            icon={<DollarSign className="h-5 w-5" />}
+                        >
+                            Finalizar como Venda
+                        </Button>
+                    )}
                     <Button
                         variant="secondary"
                         onClick={() => handlePrintOrderInvoice(selectedOrder)}

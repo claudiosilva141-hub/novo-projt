@@ -311,12 +311,30 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
 
   const addOrder = (orderToSave: Order): Order => {
-     // Save optimistically locally immediately, will not work id-wise until real backend fetch, but keeping sync simple
-     const tempId = Date.now().toString();
-     const newOrder = { ...orderToSave, id: tempId };
+     // Generate new ID based on date and series (1 to 1000)
+     const now = new Date();
+     const dateStr = now.getFullYear().toString() + 
+                     (now.getMonth() + 1).toString().padStart(2, '0') + 
+                     now.getDate().toString().padStart(2, '0');
+     
+     // Find orders from today and their max suffix
+     const todaysOrders = orders.filter(o => o.id.startsWith(dateStr));
+     let nextNum = 1;
+     
+     if (todaysOrders.length > 0) {
+       const suffixes = todaysOrders.map(o => {
+         const parts = o.id.split('-');
+         return parts.length > 1 ? parseInt(parts[1], 10) : 0;
+       });
+       nextNum = Math.max(...suffixes, 0) + 1;
+     }
+
+     const newId = `${dateStr}-${nextNum.toString().padStart(4, '0')}`;
+     const newOrder = { ...orderToSave, id: newId };
      setOrders((prev) => [...prev, newOrder]);
      
      supabase.from('orders').insert({
+        id: newOrder.id, // Explicitly provide the custom ID
         type: newOrder.type, client_name: newOrder.clientName, client_contact: newOrder.clientContact,
         client_cpf: newOrder.clientCpf, client_zip_code: newOrder.clientZipCode, client_street: newOrder.clientStreet,
         client_number: newOrder.clientNumber, client_neighborhood: newOrder.clientNeighborhood, 
@@ -327,9 +345,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
          if (error) {
             console.error('Error adding order:', error);
             alert('Erro ao salvar pedido: ' + error.message);
-         } else if (data) {
-            setOrders(currentList => currentList.map(o => o.id === tempId ? { ...newOrder, id: data.id } : o));
          }
+         // No need to update the ID here as we predetermined it
      });
 
      return newOrder;
