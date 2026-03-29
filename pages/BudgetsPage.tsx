@@ -394,8 +394,8 @@ export const BudgetsPage: React.FC = () => {
             <p><strong>Contato:</strong> {selectedOrder.clientContact}</p>
             <p><strong>CPF:</strong> {selectedOrder.clientCpf}</p>
             <div className="address-info">
-                <p><strong>Endereço:</strong> ${selectedOrder.clientStreet}, ${selectedOrder.clientNumber} - ${selectedOrder.clientNeighborhood}</p>
-                <p>${selectedOrder.clientCity}/${selectedOrder.clientState} - CEP: ${selectedOrder.clientZipCode}</p>
+                <p><strong>Endereço:</strong> {selectedOrder.clientStreet}, {selectedOrder.clientNumber} - {selectedOrder.clientNeighborhood}</p>
+                <p>{selectedOrder.clientCity}/{selectedOrder.clientState} - CEP: {selectedOrder.clientZipCode}</p>
             </div>
             <p><strong>Tipo:</strong> Orçamento</p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${ORDER_STATUS_COLORS[selectedOrder.status]}`}>{selectedOrder.status}</span></p>
@@ -426,7 +426,19 @@ export const BudgetsPage: React.FC = () => {
               </table>
             </div>
 
-            <h3 className="text-xl font-bold text-right mt-6">Total Geral: {formatCurrency(selectedOrder.total)}</h3>
+            <div className="flex justify-between items-center mt-6">
+              <h3 className="text-xl font-bold">Total Geral: {formatCurrency(selectedOrder.total)}</h3>
+              {canFinalizeSale && (
+                <Button
+                  variant="primary"
+                  onClick={() => handleConvertToSale(selectedOrder)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  icon={<DollarSign className="h-5 w-5" />}
+                >
+                  Finalizar como Venda
+                </Button>
+              )}
+            </div>
 
             {canPrintOrSendOrder && (
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
