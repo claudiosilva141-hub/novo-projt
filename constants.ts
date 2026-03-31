@@ -28,6 +28,14 @@ export const ORDER_TYPE_OPTIONS = [
   { value: 'budget', label: 'Orçamento' },
 ];
 
+export const PAYMENT_METHOD_OPTIONS = [
+  { value: 'Dinheiro', label: 'Dinheiro' },
+  { value: 'PIX', label: 'PIX' },
+  { value: 'Débito', label: 'Débito' },
+  { value: 'Crédito', label: 'Crédito' },
+  { value: 'Crédito Parcelado', label: 'Crédito Parcelado' },
+];
+
 // Reintroduced: User Role Options for selection
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.ADMIN, label: 'Administrador' },

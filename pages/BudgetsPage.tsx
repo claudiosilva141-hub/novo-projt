@@ -70,6 +70,7 @@ export const BudgetsPage: React.FC = () => {
         ...order,
         type: 'sale',
         status: OrderStatus.COMPLETED,
+        paymentMethod: 'Pendente',
         updatedAt: new Date().toISOString()
       });
       alert('Orçamento convertido em venda com sucesso!');
@@ -189,6 +190,7 @@ export const BudgetsPage: React.FC = () => {
             </div>
             <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleDateString('pt-BR')}</p>
             <p><strong>Status:</strong> ${order.status}</p>
+            ${order.paymentMethod && order.paymentMethod !== 'N/A' ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : ''}
 
             <h3 class="text-xl font-semibold mt-6 mb-3">Itens:</h3>
             <table>
@@ -399,6 +401,7 @@ export const BudgetsPage: React.FC = () => {
             </div>
             <p><strong>Tipo:</strong> Orçamento</p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${ORDER_STATUS_COLORS[selectedOrder.status]}`}>{selectedOrder.status}</span></p>
+            {selectedOrder.paymentMethod && selectedOrder.paymentMethod !== 'N/A' && <p><strong>Forma de Pagamento:</strong> {selectedOrder.paymentMethod}</p>}
             <p><strong>Criado em:</strong> {formatDateTime(selectedOrder.createdAt)}</p>
             <p><strong>Última Atualização:</strong> {formatDateTime(selectedOrder.updatedAt)}</p>
 

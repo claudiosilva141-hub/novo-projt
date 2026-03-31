@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input, Select, Textarea } from '../components/Input';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { PlusCircle, MinusCircle, Trash2, Search, Users, Scissors, Factory } from 'lucide-react';
-import { ORDER_STATUS_OPTIONS, ORDER_TYPE_OPTIONS } from '../constants';
+import { ORDER_STATUS_OPTIONS, ORDER_TYPE_OPTIONS, PAYMENT_METHOD_OPTIONS } from '../constants';
 import { useAuth } from '../App';
 
 interface EditOrderModalProps {
@@ -58,6 +58,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   const [currentClientState, setCurrentClientState] = useState(order?.clientState || '');
 
   const [currentOrderType, setCurrentOrderType] = useState(order?.type || initialOrderType);
+  const [currentPaymentMethod, setCurrentPaymentMethod] = useState(order?.paymentMethod || '');
   const [currentOrderStatus, setCurrentOrderStatus] = useState(order?.status || OrderStatus.PENDING);
   const [currentCart, setCurrentCart] = useState<CartItem[]>(order?.items || []);
   const [currentServicePrice, setCurrentServicePrice] = useState(order?.type === 'service-order' ? order.total.toFixed(2) : '0.00');
@@ -91,6 +92,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
     setCurrentClientState(order?.clientState || '');
 
     setCurrentOrderType(order?.type || initialOrderType);
+    setCurrentPaymentMethod(order?.paymentMethod || '');
     setCurrentOrderStatus(order?.status || OrderStatus.PENDING);
     setCurrentCart(order?.items || []);
     setCurrentServicePrice(order?.type === 'service-order' ? order.total.toFixed(2) : '0.00');
@@ -126,6 +128,10 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
     if (!currentClientState.trim()) errors.state = 'Estado é obrigatória.';
 
     if (currentCart.length === 0) errors.cart = 'A ordem deve ter pelo menos um item.';
+
+    if (currentOrderType !== 'budget' && !currentPaymentMethod) {
+      errors.paymentMethod = 'Forma de pagamento é obrigatória.';
+    }
 
     if (currentOrderType === 'service-order') {
       const parsedServicePrice = parseFloat(currentServicePrice);
@@ -354,6 +360,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
       clientState: currentClientState.trim(),
       type: currentOrderType,
       status: currentOrderStatus,
+      paymentMethod: currentOrderType === 'budget' ? 'N/A' : currentPaymentMethod,
       items: currentCart,
       total: finalOrderTotal,
       productionDetails: finalProductionDetails,
@@ -524,6 +531,19 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
           containerClassName="mb-4"
           disabled={isEditing} // Type cannot change for existing orders. New orders derive from initialOrderType
         />
+        {currentOrderType !== 'budget' && (
+          <Select
+            id="editPaymentMethod"
+            label="Forma de Pagamento"
+            value={currentPaymentMethod}
+            onChange={(e) => setCurrentPaymentMethod(e.target.value)}
+            options={[{ value: '', label: 'Selecione...' }, ...PAYMENT_METHOD_OPTIONS]}
+            containerClassName="mb-4"
+            error={formErrors.paymentMethod}
+            required
+            disabled={!canSave}
+          />
+        )}
         <Select
           id="editOrderStatus"
           label="Status da Ordem"

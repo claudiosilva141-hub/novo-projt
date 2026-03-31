@@ -6,7 +6,7 @@ import { Input, Select } from '../components/Input';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { generateWhatsAppInvoiceLink } from '../utils/whatsappLinkGenerator';
 import { PlusCircle, MinusCircle, Trash2, Printer, MessageSquareText, DollarSign, ScrollText, CheckCircle, Loader2 } from 'lucide-react';
-import { ORDER_STATUS_OPTIONS } from '../constants';
+import { ORDER_STATUS_OPTIONS, PAYMENT_METHOD_OPTIONS } from '../constants';
 import { Modal } from '../components/Modal';
 import { fetchAddressByCep } from '../utils/cepService';
 
@@ -34,6 +34,7 @@ export const POSPage: React.FC = () => {
   const [isClientFound, setIsClientFound] = useState(false);
 
   const [orderType, setOrderType] = useState<'sale' | 'service-order' | 'budget'>('sale');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [servicePrice, setServicePrice] = useState('0.00');
   const [isCheckoutSuccessModalOpen, setIsCheckoutSuccessModalOpen] = useState(false);
   const [checkoutSuccessOrder, setCheckoutSuccessOrder] = useState<Order | null>(null);
@@ -163,6 +164,10 @@ export const POSPage: React.FC = () => {
       alert('O carrinho está vazio.');
       return;
     }
+    if (orderType !== 'budget' && !paymentMethod) {
+      alert('Por favor, selecione uma forma de pagamento.');
+      return;
+    }
     if (!clientName.trim() || !clientContact.trim() || !clientCpf.trim()) {
       alert('Por favor, preencha nome, contato e CPF do cliente.');
       return;
@@ -249,6 +254,7 @@ export const POSPage: React.FC = () => {
       clientState: clientState.trim(),
       items: cart,
       total: finalOrderTotal,
+      paymentMethod: orderType === 'budget' ? 'N/A' : paymentMethod,
       status,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -278,6 +284,7 @@ export const POSPage: React.FC = () => {
     setCepError(null);
     setCepLoading(false);
     setOrderType('sale');
+    setPaymentMethod('');
     setServicePrice('0.00');
   };
 
@@ -340,6 +347,7 @@ export const POSPage: React.FC = () => {
             <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleDateString('pt-BR')}</p>
             <p><strong>Tipo:</strong> ${order.type === 'sale' ? 'Venda Direta' : order.type === 'service-order' ? 'Ordem de Serviço' : 'Orçamento'}</p>
             <p><strong>Status:</strong> ${order.status}</p>
+            ${order.paymentMethod && order.type !== 'budget' ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : ''}
 
             <h3 class="text-xl font-semibold mt-6 mb-3">${order.type === 'service-order' ? 'Produtos a serem confeccionados:' : 'Itens'}:</h3>
             <table>
@@ -416,6 +424,8 @@ export const POSPage: React.FC = () => {
     const baseConditions = cart.length === 0 || !clientName || !clientContact || !clientCpf || !clientZipCode || !clientStreet || !clientNumber || !clientNeighborhood || !clientCity || !clientState;
     if (baseConditions) return true;
 
+    if (orderType !== 'budget' && !paymentMethod) return true;
+
     if (orderType === 'sale' && !canFinalizeSale) return true;
     if (orderType === 'budget' && !canGenerateBudget) return true;
     if (orderType === 'service-order' && !checkPermission('canCreateServiceOrder')) return true;
@@ -423,7 +433,7 @@ export const POSPage: React.FC = () => {
     if (orderType === 'service-order' && (parseFloat(servicePrice) <= 0 || isNaN(parseFloat(servicePrice)))) return true;
 
     return false;
-  }, [cart, clientName, clientContact, clientCpf, clientZipCode, clientStreet, clientNumber, clientNeighborhood, clientCity, clientState, orderType, servicePrice, canFinalizeSale, canGenerateBudget, checkPermission]);
+  }, [cart, clientName, clientContact, clientCpf, clientZipCode, clientStreet, clientNumber, clientNeighborhood, clientCity, clientState, orderType, servicePrice, paymentMethod, canFinalizeSale, canGenerateBudget, checkPermission]);
 
 
   return (
@@ -478,6 +488,17 @@ export const POSPage: React.FC = () => {
                 ]}
                 containerClassName="mb-4"
             />
+            {orderType !== 'budget' && (
+                <Select
+                    id="paymentMethod"
+                    label="Forma de Pagamento"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    options={[{ value: '', label: 'Selecione...' }, ...PAYMENT_METHOD_OPTIONS]}
+                    containerClassName="mb-4"
+                    required
+                />
+            )}
             {orderType === 'service-order' && (
                 <Input
                     id="servicePrice"
@@ -663,7 +684,11 @@ export const POSPage: React.FC = () => {
             <p className="text-xl font-semibold text-gray-800 mb-2">
               Pedido <span className="text-indigo-600">#{checkoutSuccessOrder.id}</span> foi {checkoutSuccessOrder.type === 'budget' ? 'gerado' : 'finalizado'}!
             </p>
-            <p className="text-gray-600 mb-6">Total: {formatCurrency(checkoutSuccessOrder.total)}</p>
+            <p className="text-gray-600">Total: {formatCurrency(checkoutSuccessOrder.total)}</p>
+            {checkoutSuccessOrder.paymentMethod && checkoutSuccessOrder.type !== 'budget' && (
+               <p className="text-gray-500 mb-6">Forma de Pagto: {checkoutSuccessOrder.paymentMethod}</p>
+            )}
+            {checkoutSuccessOrder.type === 'budget' && <div className="mb-6"></div>}
 
             {checkoutSuccessOrder.type !== 'budget' ? (
               <div className="flex flex-col sm:flex-row justify-center gap-3">

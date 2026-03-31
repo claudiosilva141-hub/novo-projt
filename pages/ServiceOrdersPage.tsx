@@ -177,6 +177,7 @@ export const ServiceOrdersPage: React.FC = () => {
             <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleDateString('pt-BR')}</p>
             <p><strong>Tipo:</strong> Ordem de Serviço</p>
             <p><strong>Status:</strong> ${order.status}</p>
+            ${order.paymentMethod ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : ''}
 
             <h3 class="text-xl font-semibold mt-6 mb-3">Produtos a serem confeccionados:</h3>
             <table>
@@ -387,6 +388,7 @@ export const ServiceOrdersPage: React.FC = () => {
             </div>
             <p><strong>Tipo:</strong> Ordem de Serviço</p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${ORDER_STATUS_COLORS[selectedOrder.status]}`}>{selectedOrder.status}</span></p>
+            {selectedOrder.paymentMethod && <p><strong>Forma de Pagamento:</strong> {selectedOrder.paymentMethod}</p>}
             <p><strong>Criado em:</strong> {formatDateTime(selectedOrder.createdAt)}</p>
             <p><strong>Última Atualização:</strong> {formatDateTime(selectedOrder.updatedAt)}</p>
 
