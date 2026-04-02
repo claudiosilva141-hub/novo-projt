@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../App';
-import { Product, CartItem, Order, OrderStatus, Client, UserRole } from '../types';
+import { Product, CartItem, Order, OrderStatus, Client, UserRole, PaymentEntry } from '../types';
 import { Button } from '../components/Button';
 import { Input, Select } from '../components/Input';
 import { formatCurrency } from '../utils/currencyFormatter';
@@ -34,7 +34,11 @@ export const POSPage: React.FC = () => {
   const [isClientFound, setIsClientFound] = useState(false);
 
   const [orderType, setOrderType] = useState<'sale' | 'service-order' | 'budget'>('sale');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [newPaymentMethod, setNewPaymentMethod] = useState('');
+  const [newPaymentAmount, setNewPaymentAmount] = useState('');
+  const [newPaymentInstallments, setNewPaymentInstallments] = useState(1);
+  const [newPaymentInterestRate, setNewPaymentInterestRate] = useState('');
   const [servicePrice, setServicePrice] = useState('0.00');
   const [isCheckoutSuccessModalOpen, setIsCheckoutSuccessModalOpen] = useState(false);
   const [checkoutSuccessOrder, setCheckoutSuccessOrder] = useState<Order | null>(null);
@@ -95,6 +99,49 @@ export const POSPage: React.FC = () => {
   const calculatedSubtotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cart]);
+
+  const baseOrderTotal = orderType === 'service-order' ? (parseFloat(servicePrice) || 0) : calculatedSubtotal;
+
+  const remainingToPay = useMemo(() => {
+    const paidBaseAmount = payments.reduce((sum, p) => {
+      const interest = p.interestRate || 0;
+      return sum + (p.amount / (1 + interest / 100));
+    }, 0);
+    return Math.max(0, baseOrderTotal - paidBaseAmount);
+  }, [baseOrderTotal, payments]);
+
+  const totalInterest = useMemo(() => {
+    return payments.reduce((sum, p) => {
+      const interest = p.interestRate || 0;
+      const baseAmount = p.amount / (1 + interest / 100);
+      return sum + (p.amount - baseAmount);
+    }, 0);
+  }, [payments]);
+
+  const finalOrderTotal = baseOrderTotal + totalInterest;
+
+  const handleAddPayment = () => {
+    if (!newPaymentMethod) return alert('Selecione uma forma de pagamento.');
+    const baseAmt = parseFloat(newPaymentAmount);
+    if (isNaN(baseAmt) || baseAmt <= 0) return alert('Insira um valor válido positivo.');
+    if (baseAmt > (remainingToPay + 0.05)) return alert('O valor excede o restante a pagar.');
+    
+    const interest = parseFloat(newPaymentInterestRate) || 0;
+    const finalAmt = baseAmt * (1 + interest / 100);
+    
+    setPayments([...payments, {
+      id: Date.now().toString(),
+      method: newPaymentMethod,
+      amount: finalAmt,
+      installments: newPaymentMethod === 'Crédito Parcelado' ? newPaymentInstallments : undefined,
+      interestRate: interest
+    }]);
+    
+    setNewPaymentMethod('');
+    setNewPaymentAmount('');
+    setNewPaymentInstallments(1);
+    setNewPaymentInterestRate('');
+  };
 
   const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -164,8 +211,8 @@ export const POSPage: React.FC = () => {
       alert('O carrinho está vazio.');
       return;
     }
-    if (orderType !== 'budget' && !paymentMethod) {
-      alert('Por favor, selecione uma forma de pagamento.');
+    if (orderType !== 'budget' && remainingToPay > 0.01) {
+      alert('Por favor, adicione formas de pagamento suficientes para quitar o total.');
       return;
     }
     if (!clientName.trim() || !clientContact.trim() || !clientCpf.trim()) {
@@ -177,17 +224,7 @@ export const POSPage: React.FC = () => {
       return;
     }
 
-    let finalOrderTotal: number;
-    if (orderType === 'service-order') {
-      const parsedServicePrice = parseFloat(servicePrice);
-      if (isNaN(parsedServicePrice) || parsedServicePrice <= 0) {
-        alert('Por favor, insira um preço de serviço válido para a Ordem de Serviço.');
-        return;
-      }
-      finalOrderTotal = parsedServicePrice;
-    } else {
-      finalOrderTotal = calculatedSubtotal;
-    }
+    let orderFinalTotalToSave = orderType === 'budget' ? baseOrderTotal : finalOrderTotal;
 
     let status: OrderStatus;
     if (orderType === 'budget') {
@@ -253,8 +290,9 @@ export const POSPage: React.FC = () => {
       clientCity: clientCity.trim(),
       clientState: clientState.trim(),
       items: cart,
-      total: finalOrderTotal,
-      paymentMethod: orderType === 'budget' ? 'N/A' : paymentMethod,
+      total: orderFinalTotalToSave,
+      paymentMethod: orderType === 'budget' ? 'N/A' : (payments.length > 0 ? 'Múltiplos' : 'N/A'),
+      payments: orderType === 'budget' ? [] : payments,
       status,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -284,7 +322,10 @@ export const POSPage: React.FC = () => {
     setCepError(null);
     setCepLoading(false);
     setOrderType('sale');
-    setPaymentMethod('');
+    setPayments([]);
+    setNewPaymentMethod('');
+    setNewPaymentAmount('');
+    setNewPaymentInterestRate('');
     setServicePrice('0.00');
   };
 
@@ -347,7 +388,14 @@ export const POSPage: React.FC = () => {
             <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleDateString('pt-BR')}</p>
             <p><strong>Tipo:</strong> ${order.type === 'sale' ? 'Venda Direta' : order.type === 'service-order' ? 'Ordem de Serviço' : 'Orçamento'}</p>
             <p><strong>Status:</strong> ${order.status}</p>
-            ${order.paymentMethod && order.type !== 'budget' ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : ''}
+            ${order.payments && order.payments.length > 0 && order.type !== 'budget' ? `
+                <div class="mt-4 mb-4 pb-2 border-b border-gray-200">
+                   <strong>Forma de Pagto:</strong><br/>
+                   ${order.payments.map((p: any) => 
+                     `- ${p.method} ${p.installments ? `(${p.installments}x)` : ''} ${p.interestRate ? `(Juros: ${p.interestRate}%)` : ''}: ${formatCurrency(p.amount)}<br/>`
+                   ).join('')}
+                </div>
+            ` : ''}
 
             <h3 class="text-xl font-semibold mt-6 mb-3">${order.type === 'service-order' ? 'Produtos a serem confeccionados:' : 'Itens'}:</h3>
             <table>
@@ -424,7 +472,7 @@ export const POSPage: React.FC = () => {
     const baseConditions = cart.length === 0 || !clientName || !clientContact || !clientCpf || !clientZipCode || !clientStreet || !clientNumber || !clientNeighborhood || !clientCity || !clientState;
     if (baseConditions) return true;
 
-    if (orderType !== 'budget' && !paymentMethod) return true;
+    if (orderType !== 'budget' && remainingToPay > 0.01) return true;
 
     if (orderType === 'sale' && !canFinalizeSale) return true;
     if (orderType === 'budget' && !canGenerateBudget) return true;
@@ -433,7 +481,7 @@ export const POSPage: React.FC = () => {
     if (orderType === 'service-order' && (parseFloat(servicePrice) <= 0 || isNaN(parseFloat(servicePrice)))) return true;
 
     return false;
-  }, [cart, clientName, clientContact, clientCpf, clientZipCode, clientStreet, clientNumber, clientNeighborhood, clientCity, clientState, orderType, servicePrice, paymentMethod, canFinalizeSale, canGenerateBudget, checkPermission]);
+  }, [cart, clientName, clientContact, clientCpf, clientZipCode, clientStreet, clientNumber, clientNeighborhood, clientCity, clientState, orderType, servicePrice, remainingToPay, payments, canFinalizeSale, canGenerateBudget, checkPermission]);
 
 
   return (
@@ -488,17 +536,6 @@ export const POSPage: React.FC = () => {
                 ]}
                 containerClassName="mb-4"
             />
-            {orderType !== 'budget' && (
-                <Select
-                    id="paymentMethod"
-                    label="Forma de Pagamento"
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    options={[{ value: '', label: 'Selecione...' }, ...PAYMENT_METHOD_OPTIONS]}
-                    containerClassName="mb-4"
-                    required
-                />
-            )}
             {orderType === 'service-order' && (
                 <Input
                     id="servicePrice"
@@ -651,9 +688,112 @@ export const POSPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex justify-between items-center text-xl font-bold text-gray-800 mb-6">
-          <span>Total {orderType === 'service-order' ? '(Preço do Serviço)' : ''}:</span>
-          <span>{orderType === 'service-order' ? formatCurrency(parseFloat(servicePrice) || 0) : formatCurrency(calculatedSubtotal)}</span>
+        {orderType !== 'budget' && (
+            <div className="bg-indigo-50 p-4 rounded-lg mb-4 border border-indigo-100">
+                <h3 className="font-semibold text-lg mb-2 text-indigo-900 border-b border-indigo-200 pb-2">Pagamento</h3>
+                
+                {payments.map(p => (
+                  <div key={p.id} className="flex flex-wrap justify-between items-center bg-white p-2 rounded shadow-sm mb-2 text-sm border border-gray-100">
+                     <div>
+                        <span className="font-semibold text-gray-800">{p.method}</span>
+                        {p.installments ? ` (${p.installments}x)` : ''}
+                        {p.interestRate ? <span className="text-red-600 text-xs ml-1">(+${p.interestRate}% de juros)</span> : ''}
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <span className="font-bold text-gray-700">{formatCurrency(p.amount)}</span>
+                        <Button size="sm" variant="danger" ghost icon={<Trash2 className="w-4 h-4"/>} onClick={() => setPayments(payments.filter(x => x.id !== p.id))} />
+                     </div>
+                  </div>
+                ))}
+
+                {remainingToPay > 0.01 && (
+                    <div className="mt-4">
+                       <p className="text-sm font-medium text-gray-700 mb-2">Adicionar Pagamento:</p>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                         <Select
+                            id="newPaymentMethod"
+                            label="Forma"
+                            value={newPaymentMethod}
+                            onChange={(e) => setNewPaymentMethod(e.target.value)}
+                            options={[{ value: '', label: 'Selecione a forma...' }, ...PAYMENT_METHOD_OPTIONS]}
+                         />
+                         <div className="relative">
+                            <Input
+                                id="newPaymentAmount"
+                                type="number"
+                                step="0.01"
+                                label={`Valor (Faltam ${formatCurrency(remainingToPay)})`}
+                                value={newPaymentAmount}
+                                onChange={(e) => setNewPaymentAmount(e.target.value)}
+                                placeholder={remainingToPay.toFixed(2)}
+                            />
+                            <button
+                               type="button"
+                               onClick={() => setNewPaymentAmount(remainingToPay.toFixed(2))}
+                               className="absolute right-2 top-8 text-xs bg-indigo-100 text-indigo-700 px-2 rounded-full cursor-pointer hover:bg-indigo-200 transition"
+                            >Integra</button>
+                         </div>
+                       </div>
+                       
+                       {newPaymentMethod === 'Crédito Parcelado' && (
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 bg-white p-3 border border-indigo-50 rounded">
+                              <Input
+                                 id="newPaymentInstallments"
+                                 type="number"
+                                 label="Número de Parcelas"
+                                 min="1" max="12"
+                                 value={newPaymentInstallments.toString()}
+                                 onChange={(e) => setNewPaymentInstallments(parseInt(e.target.value) || 1)}
+                              />
+                              <Input
+                                 id="newPaymentInterestRate"
+                                 type="number"
+                                 step="0.01"
+                                 label="Taxa de Juros (%)"
+                                 placeholder="Opcional. Ex: 5.5"
+                                 value={newPaymentInterestRate}
+                                 onChange={(e) => setNewPaymentInterestRate(e.target.value)}
+                              />
+                              {newPaymentInstallments > 0 && parseFloat(newPaymentAmount || '0') > 0 && (
+                                  <div className="col-span-full text-xs text-indigo-700 mt-1">
+                                      Valor das parcelas: {newPaymentInstallments}x de {formatCurrency(((parseFloat(newPaymentAmount) * (1 + (parseFloat(newPaymentInterestRate)||0)/100)) / newPaymentInstallments))} (Total Cobrado na Maquininha: {formatCurrency(parseFloat(newPaymentAmount) * (1 + (parseFloat(newPaymentInterestRate)||0)/100))})
+                                  </div>
+                              )}
+                           </div>
+                       )}
+
+                       <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleAddPayment}
+                          className="w-full text-sm py-1.5"
+                          disabled={!newPaymentMethod || !newPaymentAmount}
+                       >
+                          + Lançar {formatCurrency(parseFloat(newPaymentAmount || '0') * (1 + (parseFloat(newPaymentInterestRate)||0)/100))}
+                       </Button>
+                    </div>
+                )}
+                {remainingToPay <= 0.01 && payments.length > 0 && (
+                    <div className="mt-3 flex items-center justify-center text-green-700 font-semibold text-sm">
+                        <CheckCircle className="w-5 h-5 mr-1" /> Total atingido. Pronto para finalizar.
+                    </div>
+                )}
+            </div>
+        )}
+
+        <div className="flex justify-between items-center text-lg text-gray-600 mb-1 pt-2 border-t border-gray-100">
+          <span>Subtotal {orderType === 'service-order' ? '(Preço do Serviço)' : ''}:</span>
+          <span>{formatCurrency(baseOrderTotal)}</span>
+        </div>
+        {totalInterest > 0 && (
+            <div className="flex justify-between items-center text-sm text-red-500 mb-1">
+               <span>Acrescimo Juros Maquininha:</span>
+               <span>{formatCurrency(totalInterest)}</span>
+            </div>
+        )}
+        <div className="flex justify-between items-center text-2xl font-bold text-gray-800 mb-6 mt-2">
+          <span>Total Final:</span>
+          <span>{orderType === 'budget' ? formatCurrency(baseOrderTotal) : formatCurrency(finalOrderTotal)}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -684,9 +824,17 @@ export const POSPage: React.FC = () => {
             <p className="text-xl font-semibold text-gray-800 mb-2">
               Pedido <span className="text-indigo-600">#{checkoutSuccessOrder.id}</span> foi {checkoutSuccessOrder.type === 'budget' ? 'gerado' : 'finalizado'}!
             </p>
-            <p className="text-gray-600">Total: {formatCurrency(checkoutSuccessOrder.total)}</p>
-            {checkoutSuccessOrder.paymentMethod && checkoutSuccessOrder.type !== 'budget' && (
-               <p className="text-gray-500 mb-6">Forma de Pagto: {checkoutSuccessOrder.paymentMethod}</p>
+            <p className="text-gray-600 mb-1 text-sm">Subtotal: {formatCurrency(checkoutSuccessOrder.total - (checkoutSuccessOrder.payments?.reduce((s,p)=>s+((p.amount/(1+(p.interestRate||0)/100))*((p.interestRate||0)/100)),0)||0))}</p>
+            {checkoutSuccessOrder.payments && checkoutSuccessOrder.payments.length > 0 && (
+                <div className="text-sm bg-gray-50 border border-gray-200 rounded p-2 mb-6 mt-3 max-w-sm mx-auto text-left">
+                   <p className="font-semibold text-gray-700 mb-1">Forma(s) de Pagto:</p>
+                   {checkoutSuccessOrder.payments.map((p, i) => (
+                      <div key={i} className="text-gray-600 flex justify-between border-b border-gray-100 last:border-0 pb-1 pt-1">
+                         <span>{p.method} {p.installments ? `(${p.installments}x)`:''}</span>
+                         <span>{formatCurrency(p.amount)}</span>
+                      </div>
+                   ))}
+                </div>
             )}
             {checkoutSuccessOrder.type === 'budget' && <div className="mb-6"></div>}
 

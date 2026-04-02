@@ -69,6 +69,14 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface PaymentEntry {
+  id: string;
+  method: string;
+  amount: number; // The amount paid using this method
+  installments?: number; // For credit
+  interestRate?: number; // % applied to this portion
+}
+
 export enum PaymentMethod {
   CASH = 'Dinheiro',
   PIX = 'PIX',
@@ -104,7 +112,8 @@ export interface Order {
   total: number; // For 'sale'/'budget': sum of items.price * quantity. For 'service-order': custom service price.
   // New: Production details for service orders (raw materials, labor)
   productionDetails?: ProductionItem[]; // Optional, only for type 'service-order'
-  paymentMethod?: string; // New field for payment method. Can be a string such as 'Dinheiro', 'PIX', etc.
+  paymentMethod?: string; // Legacy field for payment method
+  payments?: PaymentEntry[]; // New field for mixed payments/installments
   status: OrderStatus;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string

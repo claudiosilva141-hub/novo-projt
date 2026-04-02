@@ -71,6 +71,7 @@ export const BudgetsPage: React.FC = () => {
         type: 'sale',
         status: OrderStatus.COMPLETED,
         paymentMethod: 'Pendente',
+        payments: [],
         updatedAt: new Date().toISOString()
       });
       alert('Orçamento convertido em venda com sucesso!');
@@ -190,7 +191,14 @@ export const BudgetsPage: React.FC = () => {
             </div>
             <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleDateString('pt-BR')}</p>
             <p><strong>Status:</strong> ${order.status}</p>
-            ${order.paymentMethod && order.paymentMethod !== 'N/A' ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : ''}
+            ${order.payments && order.payments.length > 0 ? `
+                <div class="mt-4 mb-4 pb-2 border-b border-gray-200">
+                   <strong>Forma de Pagto:</strong><br/>
+                   ${order.payments.map((p: any) => 
+                     `- ${p.method} ${p.installments ? `(${p.installments}x)` : ''} ${p.interestRate ? `(Juros: ${p.interestRate}%)` : ''}: R$ ${p.amount.toFixed(2).replace('.', ',')}<br/>`
+                   ).join('')}
+                </div>
+            ` : (order.paymentMethod && order.paymentMethod !== 'N/A' ? `<p><strong>Forma de Pagto:</strong> ${order.paymentMethod}</p>` : '')}
 
             <h3 class="text-xl font-semibold mt-6 mb-3">Itens:</h3>
             <table>
@@ -401,7 +409,19 @@ export const BudgetsPage: React.FC = () => {
             </div>
             <p><strong>Tipo:</strong> Orçamento</p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${ORDER_STATUS_COLORS[selectedOrder.status]}`}>{selectedOrder.status}</span></p>
-            {selectedOrder.paymentMethod && selectedOrder.paymentMethod !== 'N/A' && <p><strong>Forma de Pagamento:</strong> {selectedOrder.paymentMethod}</p>}
+            {selectedOrder.payments && selectedOrder.payments.length > 0 ? (
+               <div className="mt-2 bg-gray-50 p-3 rounded border border-gray-100 mb-2">
+                 <p className="font-semibold text-gray-700 mb-1">Pagamentos:</p>
+                 {selectedOrder.payments.map((p, idx) => (
+                    <div key={idx} className="text-sm text-gray-600 flex justify-between border-b border-gray-200 last:border-0 pb-1 pt-1">
+                       <span>{p.method} {p.installments ? `(${p.installments}x)`:''} {p.interestRate ? `(+${p.interestRate}%)` : ''}</span>
+                       <span>R$ {p.amount.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                 ))}
+               </div>
+            ) : (
+               selectedOrder.paymentMethod && selectedOrder.paymentMethod !== 'N/A' && <p><strong>Forma de Pagamento:</strong> {selectedOrder.paymentMethod}</p>
+            )}
             <p><strong>Criado em:</strong> {formatDateTime(selectedOrder.createdAt)}</p>
             <p><strong>Última Atualização:</strong> {formatDateTime(selectedOrder.updatedAt)}</p>
 

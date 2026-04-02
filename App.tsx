@@ -141,7 +141,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             clientCpf: o.client_cpf, clientZipCode: o.client_zip_code, clientStreet: o.client_street,
             clientNumber: o.client_number, clientNeighborhood: o.client_neighborhood, 
             clientCity: o.client_city, clientState: o.client_state, items: o.items, total: o.total,
-            productionDetails: o.production_details, paymentMethod: o.payment_method, status: o.status, createdAt: o.created_at, updatedAt: o.updated_at
+            productionDetails: o.production_details, paymentMethod: o.payment_method, payments: o.payments, status: o.status, createdAt: o.created_at, updatedAt: o.updated_at
           })));
         }
 
@@ -339,7 +339,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         client_cpf: newOrder.clientCpf, client_zip_code: newOrder.clientZipCode, client_street: newOrder.clientStreet,
         client_number: newOrder.clientNumber, client_neighborhood: newOrder.clientNeighborhood, 
         client_city: newOrder.clientCity, client_state: newOrder.clientState, items: newOrder.items,
-        total: newOrder.total, production_details: newOrder.productionDetails, payment_method: newOrder.paymentMethod, status: newOrder.status,
+        total: newOrder.total, production_details: newOrder.productionDetails, payment_method: newOrder.paymentMethod, payments: newOrder.payments, status: newOrder.status,
         created_at: newOrder.createdAt, updated_at: newOrder.updatedAt
      }).select().single().then(({data, error}) => {
          if (error) {
@@ -361,7 +361,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         client_cpf: updatedOrder.clientCpf, client_zip_code: updatedOrder.clientZipCode, client_street: updatedOrder.clientStreet,
         client_number: updatedOrder.clientNumber, client_neighborhood: updatedOrder.clientNeighborhood, 
         client_city: updatedOrder.clientCity, client_state: updatedOrder.clientState, items: updatedOrder.items,
-        total: updatedOrder.total, production_details: updatedOrder.productionDetails, payment_method: updatedOrder.paymentMethod, status: updatedOrder.status,
+        total: updatedOrder.total, production_details: updatedOrder.productionDetails, payment_method: updatedOrder.paymentMethod, payments: updatedOrder.payments, status: updatedOrder.status,
         updated_at: updatedOrder.updatedAt
     }).eq('id', updatedOrder.id);
     if (error) {

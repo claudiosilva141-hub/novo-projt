@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total numeric NOT NULL DEFAULT 0.0,
   production_details jsonb DEFAULT '[]'::jsonb,
   payment_method text,
+  payments jsonb DEFAULT '[]'::jsonb,
   status text NOT NULL,
   created_at timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL,
   updated_at timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL
