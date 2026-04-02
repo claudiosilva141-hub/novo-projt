@@ -11,7 +11,7 @@ import { Modal } from '../components/Modal';
 import { fetchAddressByCep } from '../utils/cepService';
 
 export const POSPage: React.FC = () => {
-  const { products, addOrder, companyInfo, clients, addClient, updateClient, checkPermission } = useAuth(); // Use checkPermission
+  const { products, addOrder, companyInfo, clients, addClient, updateClient, checkPermission, updateProduct } = useAuth(); // Use checkPermission
 
   const canFinalizeSale = checkPermission('canFinalizeSale');
   const canGenerateBudget = checkPermission('canGenerateBudget');
@@ -300,6 +300,19 @@ export const POSPage: React.FC = () => {
     };
 
     const addedOrder = addOrder(newOrderData);
+
+    // Deduzir o estoque dos produtos vendidos (exceto em caso de orçamento)
+    if (orderType !== 'budget') {
+      cart.forEach((cartItem) => {
+        const product = products.find((p) => p.id === cartItem.id);
+        if (product) {
+          updateProduct({
+            ...product,
+            stock: Math.max(0, product.stock - cartItem.quantity)
+          });
+        }
+      });
+    }
 
     setCheckoutSuccessOrder(addedOrder);
     setIsCheckoutSuccessModalOpen(true);
